@@ -7637,6 +7637,87 @@ uint16_t mode_2Doctopus() {
 }
 static const char _data_FX_MODE_2DOCTOPUS[] PROGMEM = "Octopus@!,,Offset X,Offset Y,Legs;;!;2;";
 
+// 5x7 Font Data for Letters A-Z
+const uint8_t font5x7[][5] = {
+  {0x1F, 0x11, 0x11, 0x11, 0x1F},  // 'A'
+  {0x1F, 0x15, 0x15, 0x15, 0x0A},  // 'B'
+  {0x0E, 0x11, 0x11, 0x11, 0x11},  // 'C'
+  {0x1F, 0x11, 0x11, 0x11, 0x0E},  // 'D'
+  {0x1F, 0x15, 0x15, 0x15, 0x11},  // 'E'
+  {0x1F, 0x14, 0x14, 0x14, 0x10},  // 'F'
+  {0x0E, 0x11, 0x15, 0x15, 0x1D},  // 'G'
+  {0x1F, 0x04, 0x04, 0x04, 0x1F},  // 'H'
+  {0x11, 0x11, 0x1F, 0x11, 0x11},  // 'I'
+  {0x01, 0x01, 0x01, 0x11, 0x1F},  // 'J'
+  {0x1F, 0x04, 0x0A, 0x11, 0x00},  // 'K'
+  {0x1F, 0x01, 0x01, 0x01, 0x01},  // 'L'
+  {0x1F, 0x08, 0x04, 0x08, 0x1F},  // 'M'
+  {0x1F, 0x08, 0x04, 0x02, 0x1F},  // 'N'
+  {0x0E, 0x11, 0x11, 0x11, 0x0E},  // 'O'
+  {0x1F, 0x14, 0x14, 0x14, 0x08},  // 'P'
+  {0x0E, 0x11, 0x15, 0x13, 0x0F},  // 'Q'
+  {0x1F, 0x14, 0x14, 0x16, 0x09},  // 'R'
+  {0x09, 0x15, 0x15, 0x15, 0x12},  // 'S'
+  {0x10, 0x10, 0x1F, 0x10, 0x10},  // 'T'
+  {0x1F, 0x01, 0x01, 0x01, 0x1F},  // 'U'
+  {0x1E, 0x01, 0x01, 0x01, 0x1E},  // 'V'
+  {0x1F, 0x02, 0x04, 0x02, 0x1F},  // 'W'
+  {0x11, 0x0A, 0x04, 0x0A, 0x11},  // 'X'
+  {0x10, 0x08, 0x07, 0x08, 0x10},  // 'Y'
+  {0x11, 0x13, 0x15, 0x19, 0x11},  // 'Z'
+};
+
+uint16_t mode_wiltext(){
+  // if (!strip.isMatrix) return mode_static(); // not a 2D set-up
+  static uint8_t currentCharIndex = 0;  // Index of the current character to be displayed
+  static uint32_t lastChangeTime = 0;   // The time when the last character was displayed
+  const uint32_t charDisplayDelay = 1000; // Delay between characters (in milliseconds)
+
+
+  const uint16_t cols = SEGMENT.virtualWidth();
+  const uint16_t rows = SEGMENT.virtualHeight();
+  uint32_t currentTime = millis();
+
+  // Check if it's time to show the next character
+  if (currentTime - lastChangeTime >= charDisplayDelay) {
+    lastChangeTime = currentTime;  // Update the last change time
+    currentCharIndex = (currentCharIndex + 1) % 7;  // Move to the next character, loop after 3 characters
+  }
+
+  // Define the text to display
+  const uint8_t text[7] = {'S', 'U', 'H', 'R', 'U', 'S', 'H'};
+  uint8_t letterIndex = text[currentCharIndex] - 'A';  // Get the letter's index in the font
+  // Let's just start with A.
+  // uint8_t letterIndex = 0;
+
+  uint8_t startX = (cols - 5) / 2;   // Center horizontally (5 pixels wide font)
+  uint8_t startY = (rows - 7) / 2;  // Center vertically (7 pixels tall font)
+  float scaleY = rows / 7.0;
+  float scaleX = cols / 5.0;
+
+
+  uint32_t t = millis()/(257-SEGMENT.speed);
+  uint8_t aX = SEGMENT.custom1/16 + 9;
+  uint8_t aY = SEGMENT.custom2/16 + 1;
+  uint8_t aZ = SEGMENT.custom3 + 1;
+  SEGMENT.fill(CRGB::Black);
+  for (int x = 0; x < cols; x++) for (int y = 0; y <rows; y++) {
+      // uint8_t row = y + startY;
+      // uint8_t column = x + startX;
+      int scaledX = x / scaleX;
+      int scaledY = y / scaleY;
+      // todo: used scaledX and scaled Y instead of startX and startY 
+
+      uint8_t columnData = font5x7[letterIndex][x];  // Get the column data from the font
+      if (columnData & (1 << y)) {
+        // SEGMENT.setPixelColorXY(x + startX, y + startY, ColorFromPalette(SEGPALETTE, ((sin8((x*aX)+sin8((y+t)*aY))+cos8(y*aZ))+1)+t));
+        SEGMENT.setPixelColorXY(scaledX, scaledY, ColorFromPalette(SEGPALETTE, ((sin8((x*aX)+sin8((y+t)*aY))+cos8(y*aZ))+1)+t));
+      }
+  }
+  return FRAMETIME;
+}
+static const char _data_FX_MODE_WIL_TEXT[] PROGMEM = "WIL_TEXT@!,,Amplitude 1,Amplitude 2,Amplitude 3;;!;2";
+
 
 //Waving Cell
 //@Stepko (https://editor.soulmatelights.com/gallery/1704-wavingcells)
@@ -7898,6 +7979,10 @@ void WS2812FX::setupEffectData() {
   addEffect(FX_MODE_2DWAVINGCELL, &mode_2Dwavingcell, _data_FX_MODE_2DWAVINGCELL);
 
   addEffect(FX_MODE_2DAKEMI, &mode_2DAkemi, _data_FX_MODE_2DAKEMI); // audio
+
+  // Custom fx.
+  
+  addEffect(FX_MODE_WILTEXT, &mode_wiltext, _data_FX_MODE_WIL_TEXT); // audio
 #endif // WLED_DISABLE_2D
 
 }
